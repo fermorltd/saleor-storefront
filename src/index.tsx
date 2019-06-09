@@ -9,7 +9,6 @@ import { positions, Provider as AlertProvider, useAlert } from "react-alert";
 import { ApolloProvider } from "react-apollo";
 import { render } from "react-dom";
 import { Route, Router, Switch } from "react-router-dom";
-import { register } from 'register-service-worker';
 import urljoin from "url-join";
 
 import { createBrowserHistory } from "history";
@@ -29,6 +28,8 @@ import {
 import CartProvider from "./components/CartProvider";
 import ShopProvider from "./components/ShopProvider";
 import { UserContext } from "./components/User/context";
+
+import ServiceWorkerProvider, { ServiceWorkerContext } from "./components/ServiceWorkerProvider";
 
 import {
   authLink,
@@ -87,11 +88,10 @@ const startApp = async () => {
   const Root = () => {
     const alert = useAlert();
 
-    register('/service-worker.js', {
-      registered (registration) {
-        setInterval(() => navigator.onLine && registration.update(), 60 * 1000);
-      },
-      updated () {
+    const { updateAvailable } = React .useContext(ServiceWorkerContext);
+
+    React.useEffect(() => {
+      if (updateAvailable) {
         alert.show(
           {
             content: "Please refresh the page!",
@@ -106,7 +106,7 @@ const startApp = async () => {
           }
         );
       }
-    });
+    }, [updateAvailable]);
 
     return (
       <Router history={history}>
@@ -165,7 +165,9 @@ const startApp = async () => {
 
   render(
     <AlertProvider template={NotificationTemplate} {...notificationOptions}>
-      <Root />
+      <ServiceWorkerProvider>
+        <Root />
+      </ServiceWorkerProvider>
     </AlertProvider>,
     document.getElementById("root")
   );
